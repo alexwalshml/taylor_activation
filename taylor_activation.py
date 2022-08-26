@@ -1,6 +1,14 @@
 import tensorflow as tf
 
 
+def _factorial(n):
+    f = 1
+    for i in range(1, n + 1):
+        f *= i
+
+    return f
+
+
 class TaylorActivation(tf.keras.layers.Layer):
     def __init__(self, output_dim, order, w=None, intial='random'):
         super(TaylorActivation, self).__init__()
@@ -10,17 +18,9 @@ class TaylorActivation(tf.keras.layers.Layer):
         self.input_terms = None
         self.batch_size = None
 
-    def taylor_initial(self):
+        def taylor_initial(self):
         if self.initial == 'random':
-            coefs = []
-            for i in range(self.order + 1):
-                i_factorial = 1.
-                for m in range(1, i + 1):
-                    i_factorial *= m
-                term = np.random.normal() / i_factorial
-                coefs.append(term)
-
-            coefs = tf.constant(coefs, shape=[self.order + 1, 1], dtype=tf.float32)
+            coefs = tf.random_normal_initializer()(shape=[self.order + 1, 1])
 
             return coefs
 
@@ -38,47 +38,51 @@ class TaylorActivation(tf.keras.layers.Layer):
             return coefs
 
         if self.initial == 'softplus':
-            domain = np.linspace(-1., 1., 20001)
-            softplus = np.log(1. + np.exp(domain))
-            h = np.diff(domain)[0]
             coefs = []
-            for i in range(self.order + 1):
-                i_factorial = 1.
-                for m in range(1, i + 1):
-                    i_factorial *= m
-                zero_point = 0
-                for j in range(i):
-                    zero_point += ((-1.) ** (i + j)) \
-                                  * (np.math.factorial(i) / (np.math.factorial(j) * np.math.factorial(i - j))) \
-                                  * softplus[10000 + j]
-                    zero_point /= h ** i
-                term = zero_point / i_factorial
-                coefs.append(term)
+            with tf.GradientTape(persistent=True) as tape:
+                x = tf.Variable(0.0)
+                tape.watch(x)
+                softplus = tf.math.log(1. + tf.math.exp(x))
+                coefs.append(float(softplus))
+                grad = softplus
+                for i in range(1, self.order + 1):
+                    grad = tape.gradient(grad, x)
+                    coefs.append(float(grad) / _factorial(i))
 
             coefs = tf.constant(coefs, shape=[self.order + 1, 1], dtype=tf.float32)
 
             return coefs
 
         if self.initial == 'sigmoid':
-            domain = np.linspace(-1., 1., 20001)
-            sigmoid = 1. / (1. + np.exp(-domain))
-            h = np.diff(domain)[0]
             coefs = []
-            for i in range(self.order + 1):
-                i_factorial = 1.
-                for m in range(1, i + 1):
-                    i_factorial *= m
-                zero_point = 0
-                for j in range(i):
-                    zero_point += ((-1.) ** (i + j)) \
-                                  * (np.math.factorial(i) / (np.math.factorial(j) * np.math.factorial(i - j))) \
-                                  * sigmoid[10000 + j]
-                    zero_point /= h ** i
-                term = zero_point / i_factorial
-                coefs.append(term)
+            with tf.GradientTape(persistent=True) as tape:
+                x = tf.Variable(0.0)
+                tape.watch(x)
+                sigmoid = 1. / (1. + tf.math.exp(-x))
+                coefs.append(float(sigmoid))
+                grad = sigmoid
+                for i in range(1, self.order + 1):
+                    grad = tape.gradient(grad, x)
+                    coefs.append(float(grad) / _factorial(i))
 
             coefs = tf.constant(coefs, shape=[self.order + 1, 1], dtype=tf.float32)
 
+            return coefs
+        
+        if self.initial == 'tanh':
+            coefs = []
+            with tf.GradientTape(persistent=True) as tape:
+                x = tf.Variable(0.0)
+                tape.watch(x)
+                tanh = tf.math.tanh(x)
+                coefs.append(float(tanh))
+                grad = tanh
+                for i in range(1, self.order + 1):
+                    grad = tape.gradient(grad, x)
+                    coefs.append(float(grad) / _factorial(i))
+
+            coefs = tf.constant(coefs, shape=[self.order + 1, 1], dtype=tf.float32)
+            
             return coefs
 
     def build(self, input_shape):
