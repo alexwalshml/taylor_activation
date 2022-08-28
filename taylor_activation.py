@@ -55,7 +55,7 @@ class TaylorActivation(tf.keras.layers.Layer):
                 grad = func
                 tf.print(grad)
                 for i in range(1, self.order + 1):
-                    grad = tape.gradient(grad, x)
+                    grad = tape.gradient(grad, x)  # this returns None. it shouldn't 
                     coefs.append(float(grad) / _factorial(i))
 
                 coefs = tf.constant(coefs, shape=[self.order + 1, 1], dtype=tf.float32)
