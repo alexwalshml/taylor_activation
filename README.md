@@ -6,6 +6,10 @@ Self-learning activation function layer compatible with tensorflow. Uses a gener
 
 `sympy==1.11.1`
 
+While it isn't strictly required, you will also need
+
+`tensorflow_addons==0.17.1`
+
 # Usage
 A `TaylorActivation` layer can be used in place of any activation function in a tensorflow model. The polynomial layer should be compiled using the custom `TaylorAdam` optimizer included with the use of `tensorflow_addons.optimizers.Multioptimizer`. 
 
