@@ -1,6 +1,11 @@
 # taylor_activation
 Self-learning activation function layer compatible with tensorflow. Uses a generalized Taylor polynomial of a given order to approximate an output space. Efficacy results pending.
 
+# Requirements
+`tensorflow==2.9.1`
+
+`sympy==1.11.1`
+
 # Usage
 A `TaylorActivation` layer can be used in place of any activation function in a tensorflow model. The polynomial layer should be compiled using the custom `TaylorAdam` optimizer included with the use of `tensorflow_addons.optimizers.Multioptimizer`. 
 
